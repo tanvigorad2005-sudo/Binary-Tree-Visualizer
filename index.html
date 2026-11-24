@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Binary Tree Visualizer</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            color: white;
+        }
+
+        .container {
+            background: white;
+            color: black;
+            width: 85%;
+            margin: auto;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        input {
+            padding: 8px;
+            width: 300px;
+            margin: 10px;
+        }
+
+        button {
+            padding: 10px;
+            margin: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+        }
+
+        canvas {
+            background: #f9f9f9;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+
+        #output {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🌳 Binary Tree Visualizer</h1>
+
+<div class="container">
+
+    <h3>Enter Nodes (space separated)</h3>
+    <input id="nodes" placeholder="Example: 1 2 3 4 5 6 7">
+    <br>
+    <button onclick="createTree()">Create Tree</button>
+
+    <canvas id="canvas" width="900" height="450"></canvas>
+
+    <div>
+        <button onclick="runInorder()">Inorder</button>
+        <button onclick="runPreorder()">Preorder</button>
+        <button onclick="runPostorder()">Postorder</button>
+    </div>
+
+    <div>
+        <p>Slow ⬅️ ➡️ Fast</p>
+        Speed: <input type="range" id="speed" min="1" max="10" value="5">
+    </div>
+
+    <div id="output">Traversal: </div>
+
+</div>
+
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let root = null;
+    let result = [];
+    let speed = 5;
+
+    document.getElementById("speed").oninput = function () {
+        speed = this.value;
+    };
+
+    class Node {
+        constructor(data) {
+            this.data = data;
+            this.left = null;
+            this.right = null;
+            this.x = 0;
+            this.y = 0;
+        }
+    }
+
+   
+    function createTree() {
+        let input = document.getElementById("nodes").value.trim();
+
+        if (!input) {
+            alert("Please enter values!");
+            return;
+        }
+
+        let values = input.split(" ");
+
+        let nodes = values.map(val => new Node(val));
+
+        for (let i = 0; i < nodes.length; i++) {
+            let left = 2*i + 1;
+            let right = 2*i + 2;
+
+            if (left < nodes.length) nodes[i].left = nodes[left];
+            if (right < nodes.length) nodes[i].right = nodes[right];
+        }
+
+        root = nodes[0];
+
+        assignPositions(root, canvas.width / 2, 50, canvas.width / 4);
+        drawTree();
+    }
+
+   
+    function assignPositions(node, x, y, gap) {
+        if (!node) return;
+
+        node.x = x;
+        node.y = y;
+
+        if (node.left)
+            assignPositions(node.left, x - gap, y + 100, gap / 2);
+
+        if (node.right)
+            assignPositions(node.right, x + gap, y + 100, gap / 2);
+    }
+
+   
+    function drawNode(node, color="skyblue") {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 22, 0, 2*Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "black";
+        ctx.fillText(node.data, node.x - 5, node.y + 5);
+    }
+
+    function drawLine(p, c) {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+    }
+
+   
+    function drawTree() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        function draw(node) {
+            if (!node) return;
+
+            if (node.left) {
+                drawLine(node, node.left);
+                draw(node.left);
+            }
+
+            if (node.right) {
+                drawLine(node, node.right);
+                draw(node.right);
+            }
+
+            drawNode(node);
+        }
+
+        draw(root);
+    }
+
+    
+    function highlight(node) {
+        return new Promise(resolve => {
+
+            let delay = 1600 - (speed * 150);
+
+            setTimeout(() => {
+                drawNode(node, "yellow");
+                result.push(node.data);
+
+                document.getElementById("output").innerText =
+                    "Traversal: " + result.join(" ");
+
+                resolve();
+            }, delay);
+        });
+    }
+
+   
+    async function inorder(node) {
+        if (!node) return;
+        await inorder(node.left);
+        await highlight(node);
+        await inorder(node.right);
+    }
+
+    async function preorder(node) {
+        if (!node) return;
+        await highlight(node);
+        await preorder(node.left);
+        await preorder(node.right);
+    }
+
+    async function postorder(node) {
+        if (!node) return;
+        await postorder(node.left);
+        await postorder(node.right);
+        await highlight(node);
+    }
+
+  
+    function reset() {
+        result = [];
+        document.getElementById("output").innerText = "Traversal: ";
+        drawTree();
+    }
+
+    
+    async function runInorder() {
+        if (!root) return alert("Create tree first!");
+        reset();
+        await inorder(root);
+    }
+
+    async function runPreorder() {
+        if (!root) return alert("Create tree first!");
+        reset();
+        await preorder(root);
+    }
+
+    async function runPostorder() {
+        if (!root) return alert("Create tree first!");
+        reset();
+        await postorder(root);
+    }
+</script>
+
+</body>
+</html>
